@@ -2,7 +2,6 @@
 
 A web tool that detects all fonts used on any website, classifies them as free, paid, system, or unknown, and downloads free fonts locally with proper `@font-face` CSS — ready to drop into your project.
 
-![Font Detective Screenshot](https://i.imgur.com/placeholder.png)
 
 ## Features
 
