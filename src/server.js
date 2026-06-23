@@ -67,22 +67,22 @@ app.get('/api/font/:id', async (req, res) => {
   }
 });
 
-// Katmanlı font indirme:
-// 1. GWFH (Google Fonts) — gwfhId varsa
-// 2. Doğrudan src URL — srcUrls varsa
-// 3. Bulunamadı
+// Layered font download:
+// 1. GWFH (Google Fonts) — if gwfhId exists
+// 2. Direct src URL — if srcUrls exist
+// 3. Not found
 async function downloadFontLayered(font, fontsPath) {
   const fontKey = font.gwfhId || font.family.toLowerCase().replace(/\s+/g, '-');
   const outputDir = path.join(FONTS_DIR, fontKey);
 
-  // Katman 1: GWFH
+  // Layer 1
   if (font.gwfhId) {
     const downloaded = await downloadFont(font.gwfhId, font.variants || ['regular'], outputDir, font.subsets || ['latin', 'latin-ext']);
     const css = generateFontFaceCss(font.family, downloaded.files, `${fontsPath}/${fontKey}`);
     return { family: font.family, fontKey, css, files: downloaded.files, source: 'gwfh' };
   }
 
-  // Katman 2: Doğrudan src URL
+  // Layer 2
   if (font.srcUrls && font.srcUrls.length > 0) {
     const files = await downloadFromSrcUrls(font.family, font.srcUrls, outputDir);
     if (files.length > 0) {
