@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Font Detective</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0b0f;
+      --surface: #13151f;
+      --surface2: #1c1f2e;
+      --border: #252840;
+      --accent: #6366f1;
+      --accent-hover: #4f51d9;
+      --accent-dim: #312e81;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --green: #4ade80;
+      --green-bg: #052e16;
+      --red: #f87171;
+      --red-bg: #2d0a0a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 1rem 60px;
+      background: radial-gradient(ellipse 70% 50% at 50% 0%, #1e1b4b44 0%, transparent 70%);
+    }
+
+    .hero-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 32px #6366f140;
+    }
+
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 40%, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .6rem;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 480px;
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── SEARCH ── */
+    .search-wrap {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      gap: .5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: .4rem .4rem .4rem .9rem;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .search-wrap:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px #6366f120;
+    }
+    .search-wrap input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 1rem;
+      min-width: 0;
+    }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-wrap button {
+      padding: .65rem 1.4rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .search-wrap button:hover { background: var(--accent-hover); }
+    .search-wrap button:disabled { background: #2d3148; cursor: not-allowed; }
+
+    /* ── RESULTS ── */
+    .results {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 1rem 6rem;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+
+    .results-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .results-title span { color: var(--text); }
+
+    /* ── FILTERS ── */
+    .filters { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .filter-btn {
+      padding: .35rem .9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+    /* ── FONT CARD ── */
+    .font-grid { display: flex; flex-direction: column; gap: .6rem; }
+
+    .font-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: border-color .15s;
+    }
+    .font-card:hover { border-color: #353860; }
+    .font-card.selected { border-color: var(--accent); background: #1a1c32; }
+
+    .font-card input[type=checkbox] {
+      width: 17px; height: 17px;
+      margin-top: 3px;
+      cursor: pointer;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .font-info { flex: 1; min-width: 0; }
+    .font-name {
+      font-weight: 600;
+      font-size: .98rem;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .font-meta {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: .2rem;
+    }
+
+    .badge {
+      padding: .22rem .65rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .3px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .badge-free { background: var(--green-bg); color: var(--green); border: 1px solid #14532d; }
+    .badge-paid { background: var(--red-bg); color: var(--red); border: 1px solid #4c1d1d; }
+    .badge-unknown { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+    .badge-system { background: #1a1f2e; color: #7dd3fc; border: 1px solid #1e3a5f; }
+
+    /* ── VARIANTS & SUBSETS ── */
+    .variants { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .6rem; }
+    .variant-chip {
+      padding: .18rem .55rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: .72rem;
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .variant-chip.selected { background: var(--accent-dim); border-color: var(--accent); color: #a5b4fc; }
+    .variant-chip:hover:not(.selected) { border-color: #4a4f7a; color: var(--text); }
+
+    .subset-label { font-size: .68rem; color: var(--muted); margin-top: .5rem; margin-bottom: .2rem; letter-spacing: .3px; }
+    .subset-chip {
+      padding: .15rem .5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: .68rem;
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .subset-chip.selected { background: #0d2d1a; border-color: #14532d; color: var(--green); }
+    .subset-chip:hover:not(.selected) { border-color: #4a4f7a; color: var(--text); }
+
+    /* ── ACTION BAR ── */
+    .action-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #0d0e18ee;
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      transform: translateY(100%);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+      z-index: 50;
+    }
+    .action-bar.visible { transform: translateY(0); }
+    .action-bar-left { display: flex; flex-direction: column; gap: .15rem; }
+    .action-bar-label { font-size: .78rem; color: var(--muted); }
+    .action-bar-count { font-size: 1rem; font-weight: 700; color: #fff; }
+    .action-bar button {
+      padding: .7rem 1.6rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: .95rem;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .action-bar button:hover { background: var(--accent-hover); }
+    .action-bar button:disabled { background: #2d3148; cursor: not-allowed; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      max-width: 740px;
+      width: 100%;
+      max-height: 82vh;
+      overflow-y: auto;
+    }
+    .modal-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+    .modal-top h2 { font-size: 1.1rem; font-weight: 700; }
+    .modal-close {
+      background: var(--surface2);
+      border: none;
+      color: var(--muted);
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal pre {
+      background: #080910;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      font-size: .8rem;
+      overflow-x: auto;
+      color: #a5b4fc;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.7;
+    }
+    .modal-actions { display: flex; gap: .5rem; margin-top: 1rem; justify-content: flex-end; }
+    .btn-copy {
+      padding: .55rem 1.2rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: .9rem;
+    }
+    .btn-copy:hover { background: var(--accent-hover); }
+
+    /* ── PROJECT DIR INPUT ── */
+    .dir-modal .modal { max-width: 520px; }
+    .dir-label { font-size: .85rem; color: var(--muted); margin-bottom: .5rem; }
+    .dir-input-wrap {
+      display: flex;
+      background: #080910;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .dir-input-wrap:focus-within { border-color: var(--accent); }
+    .dir-input-wrap input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: .75rem 1rem;
+      color: var(--text);
+      font-size: .9rem;
+      font-family: monospace;
+    }
+    .dir-input-wrap input::placeholder { color: var(--muted); }
+    .dir-actions { display: flex; gap: .5rem; margin-top: 1rem; justify-content: flex-end; }
+    .btn-apply {
+      padding: .6rem 1.4rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: .9rem;
+      cursor: pointer;
+    }
+    .btn-apply:hover { background: var(--accent-hover); }
+    .btn-apply:disabled { background: #2d3148; cursor: not-allowed; }
+    .btn-secondary {
+      padding: .6rem 1.2rem;
+      background: var(--surface2);
+      color: var(--text);
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: .9rem;
+      cursor: pointer;
+    }
+
+    /* ── REPORT ── */
+    .report-section { margin-top: 1.25rem; }
+    .report-section h3 { font-size: .85rem; color: var(--muted); margin-bottom: .5rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .report-list { list-style: none; display: flex; flex-direction: column; gap: .3rem; }
+    .report-list li {
+      font-size: .8rem;
+      padding: .3rem .6rem;
+      border-radius: 6px;
+      background: #080910;
+      color: #a5b4fc;
+      font-family: monospace;
+    }
+    .report-list li.error { color: var(--red); }
+    .report-list li.success { color: var(--green); }
+
+    /* ── MODE TOGGLE ── */
+    .mode-toggle {
+      display: flex;
+      gap: .4rem;
+      margin-top: 1rem;
+      justify-content: center;
+    }
+    .mode-btn {
+      padding: .4rem 1rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .mode-btn.active { background: var(--surface2); border-color: var(--accent); color: #fff; }
+    .mode-btn:hover:not(.active) { border-color: #4a4f7a; color: var(--text); }
+
+    /* ── LIMIT INPUT ── */
+    .limit-wrap {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-top: .75rem;
+      justify-content: center;
+    }
+    .limit-label { font-size: .85rem; color: var(--muted); }
+    .limit-input {
+      width: 80px;
+      padding: .35rem .6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .9rem;
+      text-align: center;
+      outline: none;
+    }
+    .limit-input:focus { border-color: var(--accent); }
+
+    /* ── STATES ── */
+    .state-msg {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--muted);
+    }
+    .state-icon { font-size: 3rem; margin-bottom: .75rem; }
+    .state-msg p { font-size: .95rem; line-height: 1.6; }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── DIVIDER ── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin: 1.75rem 0 1rem;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+    .section-divider::before, .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero" id="hero">
+  <div class="hero-icon">🔍</div>
+  <h1>Font Detective</h1>
+  <p>Detect all fonts used on any website, identify free vs. paid, and download free ones locally with proper @font-face CSS.</p>
+  <div class="search-wrap">
+    <input id="urlInput" type="url" placeholder="https://example.com" />
+    <button id="scanBtn" onclick="startScan()">Scan</button>
+  </div>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="modePageBtn" onclick="setMode('page',this)">Homepage Only</button>
+    <button class="mode-btn" id="modeSiteBtn" onclick="setMode('site',this)">Full Site</button>
+  </div>
+  <div class="limit-wrap" id="limitWrap" style="display:none">
+    <label class="limit-label">Max pages to crawl</label>
+    <input id="pageLimit" type="number" min="1" max="500" value="50" class="limit-input" />
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="results" id="resultsSection" style="display:none">
+  <div class="search-wrap" style="max-width:100%; margin-bottom:.75rem">
+    <input id="urlInput2" type="url" placeholder="https://example.com" />
+    <button id="scanBtn2" onclick="startScan(true)">Scan</button>
+  </div>
+  <div class="mode-toggle" style="margin-bottom:.75rem">
+    <button class="mode-btn active" id="modePageBtn2" onclick="setMode('page',this,'2')">Homepage Only</button>
+    <button class="mode-btn" id="modeSiteBtn2" onclick="setMode('site',this,'2')">Full Site</button>
+  </div>
+  <div class="limit-wrap" id="limitWrap2" style="display:none; margin-bottom:1.5rem">
+    <label class="limit-label">Max pages to crawl</label>
+    <input id="pageLimit2" type="number" min="1" max="500" value="50" class="limit-input" />
+  </div>
+
+  <div class="results-header">
+    <div class="results-title">
+      <span id="fontCount">0</span> fonts found <span id="pagesInfo" style="font-size:.8rem;color:var(--muted)"></span>
+    </div>
+    <div class="filters" id="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('free',this)">✅ Free</button>
+      <button class="filter-btn" onclick="setFilter('paid',this)">💳 Paid</button>
+      <button class="filter-btn" onclick="setFilter('unknown',this)">❓ Unknown</button>
+      <button class="filter-btn" onclick="setFilter('system',this)">🖥 System Font</button>
+    </div>
+  </div>
+
+  <div id="scannedPagesSection" style="display:none; margin-bottom:1.25rem">
+    <button onclick="togglePages()" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;padding:0">
+      <span id="pagesToggleIcon">▶</span>
+      <span id="pagesToggleLabel">Scanned pages</span>
+    </button>
+    <ul id="scannedPagesList" style="display:none;list-style:none;margin-top:.6rem;flex-direction:column;gap:.3rem"></ul>
+  </div>
+
+  <div id="fontGrid" class="font-grid"></div>
+</div>
+
+<!-- ACTION BAR -->
+<div class="action-bar" id="actionBar">
+  <div class="action-bar-left">
+    <div class="action-bar-label">Selected fonts</div>
+    <div class="action-bar-count" id="selectedCount">0 fonts</div>
+  </div>
+  <button id="downloadBtn" onclick="openDirModal()">⬇ Download & Apply to Project</button>
+</div>
+
+<!-- PROJECT DIR MODAL -->
+<div class="modal-overlay dir-modal" id="dirModalOverlay">
+  <div class="modal">
+    <div class="modal-top">
+      <h2>Select project folder</h2>
+      <button class="modal-close" onclick="closeDirModal()">✕</button>
+    </div>
+    <p class="dir-label">Full path to the project folder where fonts will be copied and CSS/HTML files will be updated:</p>
+    <div class="dir-input-wrap">
+      <input id="projectDirInput" type="text" placeholder="C:\Users\you\Documents\my-project" />
+    </div>
+    <p style="font-size:.75rem; color:var(--muted); margin-top:.6rem">Fonts will be saved in the <code style="color:#a5b4fc">fonts/</code> subdirectory inside the project folder.</p>
+    <div class="dir-actions">
+      <button class="btn-secondary" onclick="closeDirModal()">Cancel</button>
+      <button class="btn-secondary" onclick="onlyDownload()">Generate CSS Only</button>
+      <button class="btn-apply" id="applyBtn" onclick="applyToProject()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-top">
+      <h2>Generated @font-face CSS</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <pre id="cssOutput"></pre>
+    <div id="reportSection" style="display:none">
+      <div class="report-section" id="copiedReport"></div>
+      <div class="report-section" id="updatedReport"></div>
+      <div class="report-section" id="errorReport"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-copy" onclick="copyCss()">Copy CSS</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let allFonts = [];
+  let currentFilter = 'all';
+  let fontDetails = {};
+  let selectedVariants = {};
+  let selectedSubsets = {};
+  let scanMode = 'page'; // 'page' | 'site'
+
+  function setMode(mode, el, suffix = '') {
+    scanMode = mode;
+    const currentLimit = document.getElementById('pageLimit' + suffix).value;
+    ['', '2'].forEach(s => {
+      const pageBtn = document.getElementById('modePageBtn' + s);
+      const siteBtn = document.getElementById('modeSiteBtn' + s);
+      const limitWrap = document.getElementById('limitWrap' + s);
+      const limitInput = document.getElementById('pageLimit' + s);
+      if (pageBtn) pageBtn.classList.toggle('active', mode === 'page');
+      if (siteBtn) siteBtn.classList.toggle('active', mode === 'site');
+      if (limitWrap) limitWrap.style.display = mode === 'site' ? 'flex' : 'none';
+      if (limitInput && currentLimit) limitInput.value = currentLimit;
+    });
+  }
+
+  async function startScan(fromResults = false) {
+    const input = fromResults ? document.getElementById('urlInput2') : document.getElementById('urlInput');
+    const url = input.value.trim();
+    if (!url) return;
+
+    document.getElementById('urlInput').value = url;
+    document.getElementById('urlInput2').value = url;
+
+    const btns = [document.getElementById('scanBtn'), document.getElementById('scanBtn2')];
+    btns.forEach(b => { b.disabled = true; b.textContent = 'Scanning…'; });
+
+    document.getElementById('hero').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'block';
+    document.getElementById('actionBar').classList.remove('visible');
+    history.pushState({ page: 'results' }, '', '');
+    showLoading();
+
+    try {
+      if (scanMode === 'site') showLoading('Crawling site pages, this may take a moment…');
+
+      const maxPages = parseInt(fromResults ? document.getElementById('pageLimit2').value : document.getElementById('pageLimit').value) || 50;
+      document.getElementById('pageLimit').value = maxPages;
+      document.getElementById('pageLimit2').value = maxPages;
+
+      const res = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, mode: scanMode, maxPages }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      allFonts = data.allFonts || [];
+      document.getElementById('fontCount').textContent = allFonts.length;
+      const pagesInfo = document.getElementById('pagesInfo');
+      if (data.pagesScanned > 1) pagesInfo.textContent = `· ${data.pagesScanned} pages scanned`;
+      else pagesInfo.textContent = '';
+
+      // Scanned pages section
+      const pagesSection = document.getElementById('scannedPagesSection');
+      const pagesList = document.getElementById('scannedPagesList');
+      if (data.scannedPages && data.scannedPages.length > 1) {
+        document.getElementById('pagesToggleLabel').textContent = `Scanned pages (${data.scannedPages.length})`;
+        pagesList.innerHTML = data.scannedPages.map(u =>
+          `<li style="font-size:.75rem;padding:.25rem .5rem;background:#080910;border-radius:6px;font-family:monospace">
+            <a href="${u}" target="_blank" style="color:#6366f1;text-decoration:none">${u}</a>
+          </li>`
+        ).join('');
+        pagesSection.style.display = 'block';
+        pagesList.style.display = 'none';
+      } else {
+        pagesSection.style.display = 'none';
+      }
+
+      await Promise.all(
+        allFonts.filter(f => f.downloadable && f.gwfhId).map(async f => {
+          const r = await fetch(`/api/font/${f.gwfhId}`);
+          fontDetails[f.gwfhId] = await r.json();
+          selectedVariants[f.gwfhId] = new Set(['regular']);
+          const available = fontDetails[f.gwfhId]?.subsets || [];
+          const defaults = available.filter(s => s === 'latin' || s === 'latin-ext');
+          selectedSubsets[f.gwfhId] = new Set(defaults.length ? defaults : available.slice(0, 1));
+        })
+      );
+
+      renderFonts();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      btns.forEach(b => { b.disabled = false; b.textContent = 'Scan'; });
+    }
+  }
+
+  function setFilter(filter, el) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderFonts();
+  }
+
+  function renderFonts() {
+    const grid = document.getElementById('fontGrid');
+    const filtered = allFonts.filter(f => currentFilter === 'all' || f.type === currentFilter);
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="state-msg"><div class="state-icon">🔎</div><p>No fonts found for this filter.</p></div>`;
+      return;
+    }
+
+    const order = { free: 0, paid: 1, unknown: 2 };
+    filtered.sort((a, b) => (order[a.type] ?? 3) - (order[b.type] ?? 3));
+
+    grid.innerHTML = filtered.map(font => {
+      let badge;
+      if (font.type === 'free') {
+        const downloadLabel = font.gwfhId ? ' · ↓ Downloadable' : '';
+        badge = `<span class="badge badge-free">Free${downloadLabel}</span>`;
+      } else if (font.type === 'paid') {
+        badge = '<span class="badge badge-paid">Paid</span>';
+      } else if (font.type === 'system') {
+        badge = '<span class="badge badge-system">System Font</span>';
+      } else {
+        badge = '<span class="badge badge-unknown">Unknown</span>';
+      }
+
+      const aiNote = (font.type === 'free' || font.type === 'paid') && font.researchSource
+        ? `<div style="font-size:.7rem;color:var(--muted);margin-top:.35rem">
+             🤖 <span style="color:#a78bfa">Groq AI (llama-3.3-70b)</span> identifies this font as
+             <strong style="color:var(--text)">${font.license || 'unknown'}</strong> licensed
+             ${font.researchSource && font.researchSource !== 'Unknown' ? `and available on <strong style="color:var(--text)">${font.researchSource}</strong>` : ''}.
+             ${font.researchUrl ? `<br><span style="color:#4f6baa">Source:</span> <a href="${font.researchUrl}" target="_blank" style="color:#6366f1;text-decoration:none">${font.researchUrl}</a>` : ''}
+           </div>`
+        : '';
+
+      const checkable = font.downloadable && font.gwfhId;
+      const cardId = font.gwfhId || font.name.replace(/\s/g, '_');
+      const checkbox = `<input type="checkbox" ${checkable ? `data-id="${cardId}"` : 'disabled style="opacity:.25"'} onchange="updateSelection(this)">`;
+
+      const details = checkable ? fontDetails[font.gwfhId] : null;
+      const variantHtml = details
+        ? `<div class="variants">
+            ${details.variants.map(v =>
+              `<button class="variant-chip ${selectedVariants[font.gwfhId]?.has(v.id) ? 'selected' : ''}"
+                onclick="toggleVariant('${font.gwfhId}','${v.id}',this)">${v.id}</button>`
+            ).join('')}
+           </div>`
+        : '';
+      const subsetHtml = details && details.subsets && details.subsets.length > 1
+        ? `<div class="subset-label">Subset</div>
+           <div class="variants">
+            ${details.subsets.map(s =>
+              `<button class="subset-chip ${selectedSubsets[font.gwfhId]?.has(s) ? 'selected' : ''}"
+                onclick="toggleSubset('${font.gwfhId}','${s}',this)">${s}</button>`
+            ).join('')}
+           </div>`
+        : '';
+
+      return `
+        <div class="font-card" id="card-${font.gwfhId || font.name.replace(/\s/g,'_')}">
+          ${checkbox}
+          <div class="font-info">
+            <div class="font-name">${font.name}</div>
+            <div class="font-meta">
+              ${font.source || ''}${font.provider ? ' · ' + font.provider : ''}
+              ${font.license ? ' · ' + font.license : ''}
+              ${font.researchSource && font.researchSource !== 'Unknown' ? ' · ' + font.researchSource : ''}
+              ${font.gwfhId ? ' · <a href="https://gwfh.mranftl.com/fonts/' + font.gwfhId + '" target="_blank" style="color:#6366f1;text-decoration:none">gwfh.mranftl.com</a>' : ''}
+            </div>
+            ${aiNote}
+            ${variantHtml}
+            ${subsetHtml}
+          </div>
+          ${badge}
+        </div>`;
+    }).join('');
+  }
+
+  function toggleVariant(fontId, variantId, el) {
+    if (!selectedVariants[fontId]) selectedVariants[fontId] = new Set();
+    if (selectedVariants[fontId].has(variantId)) {
+      if (selectedVariants[fontId].size === 1) return;
+      selectedVariants[fontId].delete(variantId);
+      el.classList.remove('selected');
+    } else {
+      selectedVariants[fontId].add(variantId);
+      el.classList.add('selected');
+    }
+  }
+
+  function toggleSubset(fontId, subset, el) {
+    if (!selectedSubsets[fontId]) selectedSubsets[fontId] = new Set();
+    if (selectedSubsets[fontId].has(subset)) {
+      if (selectedSubsets[fontId].size === 1) return;
+      selectedSubsets[fontId].delete(subset);
+      el.classList.remove('selected');
+    } else {
+      selectedSubsets[fontId].add(subset);
+      el.classList.add('selected');
+    }
+  }
+
+  function updateSelection(cb) {
+    const card = cb.closest('.font-card');
+    if (card) card.classList.toggle('selected', cb.checked);
+
+    const checked = document.querySelectorAll('input[type=checkbox][data-id]:checked');
+    const bar = document.getElementById('actionBar');
+    document.getElementById('selectedCount').textContent = `${checked.length} font${checked.length !== 1 ? 's' : ''}`;
+    bar.classList.toggle('visible', checked.length > 0);
+  }
+
+  function getSelectedFonts() {
+    return [...document.querySelectorAll('input[type=checkbox][data-id]:checked')].map(el => {
+      const id = el.dataset.id;
+      const font = allFonts.find(f => (f.gwfhId && f.gwfhId === id) || f.name.replace(/\s/g,'_') === id);
+      return {
+        gwfhId: font?.gwfhId || null,
+        family: font?.gwfhFamily || font?.name,
+        variants: [...(selectedVariants[id] || ['regular'])],
+        subsets: [...(selectedSubsets[id] || ['latin', 'latin-ext'])],
+        srcUrls: font?.srcUrls || [],
+      };
+    });
+  }
+
+  function openDirModal() {
+    if (!getSelectedFonts().length) return;
+    document.getElementById('dirModalOverlay').classList.add('open');
+  }
+  function closeDirModal() {
+    document.getElementById('dirModalOverlay').classList.remove('open');
+  }
+
+  async function onlyDownload() {
+    closeDirModal();
+    const fonts = getSelectedFonts();
+    const btn = document.getElementById('downloadBtn');
+    btn.textContent = 'Downloading…'; btn.disabled = true;
+    try {
+      const res = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fonts }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showModal(data.combinedCss, null, data.failed);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.textContent = '⬇ Download & Apply to Project'; btn.disabled = false;
+    }
+  }
+
+  async function applyToProject() {
+    const projectDir = document.getElementById('projectDirInput').value.trim();
+    if (!projectDir) { alert('Please enter the project folder path.'); return; }
+
+    const fonts = getSelectedFonts();
+    const applyBtn = document.getElementById('applyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    applyBtn.textContent = 'Applying…'; applyBtn.disabled = true;
+    downloadBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fonts, projectDir }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      closeDirModal();
+      showModal(data.combinedCss, data.report);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      applyBtn.textContent = 'Apply'; applyBtn.disabled = false;
+      downloadBtn.textContent = '⬇ Download & Apply to Project'; downloadBtn.disabled = false;
+    }
+  }
+
+  function showModal(css, report, failed = []) {
+    document.getElementById('cssOutput').textContent = css;
+
+    const reportSection = document.getElementById('reportSection');
+    if (report) {
+      reportSection.style.display = 'block';
+      document.getElementById('copiedReport').innerHTML = report.copiedFiles.length
+        ? `<h3>📁 Copied font files (${report.copiedFiles.length})</h3>
+           <ul class="report-list">${report.copiedFiles.map(f => `<li class="success">✓ ${f}</li>`).join('')}</ul>`
+        : '';
+      document.getElementById('updatedReport').innerHTML = report.updatedFiles.length
+        ? `<h3>✏️ Updated files (${report.updatedFiles.length})</h3>
+           <ul class="report-list">${report.updatedFiles.map(f => `<li class="success">✓ ${f}</li>`).join('')}</ul>`
+        : '';
+      document.getElementById('errorReport').innerHTML = [
+        ...(report.errors || []),
+        ...((failed || []).map(f => `Could not download (source unreachable): ${f}`))
+      ].length ? `<h3>⚠️ Issues</h3>
+           <ul class="report-list">${[...(report.errors||[]), ...((failed||[]).map(f=>`Failed to download: ${f}`))].map(e => `<li class="error">${e}</li>`).join('')}</ul>`
+        : '';
+    } else {
+      reportSection.style.display = 'none';
+    }
+
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+  async function copyCss() {
+    await navigator.clipboard.writeText(document.getElementById('cssOutput').textContent);
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => btn.textContent = 'Copy CSS', 1800);
+  }
+
+  function showLoading(msg = 'Scanning page, detecting fonts…') {
+    document.getElementById('fontGrid').innerHTML = `
+      <div class="state-msg">
+        <div class="spinner"></div>
+        <p>${msg}</p>
+      </div>`;
+  }
+
+  function showError(msg) {
+    document.getElementById('fontGrid').innerHTML = `
+      <div class="state-msg">
+        <div class="state-icon">⚠️</div>
+        <p>${msg}</p>
+      </div>`;
+  }
+
+  function togglePages() {
+    const list = document.getElementById('scannedPagesList');
+    const icon = document.getElementById('pagesToggleIcon');
+    const visible = list.style.display === 'flex';
+    list.style.display = visible ? 'none' : 'flex';
+    icon.textContent = visible ? '▶' : '▼';
+  }
+
+  window.addEventListener('popstate', () => {
+    document.getElementById('hero').style.display = 'flex';
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('actionBar').classList.remove('visible');
+  });
+
+  document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
+  document.getElementById('urlInput2').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(true); });
+</script>
+</body>
+</html>
